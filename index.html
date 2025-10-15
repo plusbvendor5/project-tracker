@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Tracker</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
+        #addProject { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        input, select { padding: 8px; margin: 5px; width: 200px; }
+        button { padding: 8px 16px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 4px; margin: 5px; }
+        button:hover { background: #218838; }
+        #projectList { background: white; padding: 20px; border-radius: 8px; }
+        .project { padding: 15px; border-bottom: 1px solid #ddd; margin-bottom: 10px; }
+        .project h3 { margin: 0 0 10px 0; }
+        .task { display: flex; justify-content: space-between; align-items: center; padding: 5px; background: #f8f9fa; margin: 5px 0; }
+        .task.completed { text-decoration: line-through; color: #6c757d; }
+        .add-task { background: #007bff; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+        .delete-task { background: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+        .delete-project { background: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Project Tracker</h1>
+    <div id="addProject">
+        <input type="text" id="projectName" placeholder="Project Name">
+        <select id="status">
+            <option value="pending">Pending</option>
+            <option value="in-progress">In Progress</option>
+            <option value="completed">Completed</option>
+        </select>
+        <button onclick="addProject()">Add Project</button>
+    </div>
+    <div id="projectList"></div>
+
+    <script>
+        let projects = JSON.parse(localStorage.getItem('projects')) || [];
+
+        function addProject() {
+            const name = document.getElementById('projectName').value.trim();
+            const status = document.getElementById('status').value;
+            if (name) {
+                const project = { id: Date.now(), name, status, tasks: [] };
+                projects.push(project);
+                localStorage.setItem('projects', JSON.stringify(projects));
+                document.getElementById('projectName').value = '';
+                document.getElementById('status').value = 'pending';
+                renderProjects();
+            }
+        }
+
+        function toggleTask(projectId, taskId) {
+            const project = projects.find(p => p.id === projectId);
+            const task = project.tasks.find(t => t.id === taskId);
+            task.completed = !task.completed;
+            localStorage.setItem('projects', JSON.stringify(projects));
+            renderProjects();
+        }
+
+        function addTask(projectId) {
+            const taskName = prompt('Task name:');
+            if (taskName) {
+                const project = projects.find(p => p.id === projectId);
+                project.tasks.push({ id: Date.now(), name: taskName, completed: false });
+                localStorage.setItem('projects', JSON.stringify(projects));
+                renderProjects();
+            }
+        }
+
+        function deleteTask(projectId, taskId) {
+            const project = projects.find(p => p.id === projectId);
+            project.tasks = project.tasks.filter(t => t.id !== taskId);
+            localStorage.setItem('projects', JSON.stringify(projects));
+            renderProjects();
+        }
+
+        function deleteProject(id) {
+            projects = projects.filter(p => p.id !== id);
+            localStorage.setItem('projects', JSON.stringify(projects));
+            renderProjects();
+        }
+
+        function renderProjects() {
+            const container = document.getElementById('projectList');
+            container.innerHTML = projects.map(project => `
+                <div class="project">
+                    <h3>${project.name} - <span style="color: ${project.status === 'completed' ? 'green' : project.status === 'in-progress' ? 'orange' : 'red'}">${project.status}</span></h3>
+                    <button class="add-task" onclick="addTask(${project.id})">Add Task</button>
+                    <button class="delete-project" onclick="deleteProject(${project.id})">Delete Project</button>
+                    <div>
+                        ${project.tasks.map(task => `
+                            <div class="task ${task.completed ? 'completed' : ''}">
+                                <span>${task.name}</span>
+                                <div>
+                                    <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${project.id}, ${task.id})">
+                                    <button class="delete-task" onclick="deleteTask(${project.id}, ${task.id})">Delete</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        renderProjects();
+    </script>
+</body>
+</html>
